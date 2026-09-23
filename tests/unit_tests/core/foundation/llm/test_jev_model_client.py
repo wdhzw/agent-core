@@ -244,6 +244,23 @@ class TestJevModelClientSystemOne:
             await client.system_one(state="hello", questions={})
 
     @pytest.mark.asyncio
+    async def test_system_one_wraps_response_validation_errors(self):
+        """A response that doesn't match the documented wire shape must not leak
+
+        a raw ``pydantic.ValidationError``/``json.JSONDecodeError`` past this
+        client; it must be wrapped the same way HTTP-transport errors are.
+        """
+        client = _make_client()
+        mock_async_client = _mock_async_client({"answers": {"q": {"type": "not_a_real_answer_type"}}})
+
+        with patch("httpx.AsyncClient", return_value=mock_async_client):
+            with pytest.raises(BaseError):
+                await client.system_one(
+                    state="hello",
+                    questions={"q": NoulQuestion(instructions="is this bad?")},
+                )
+
+    @pytest.mark.asyncio
     async def test_system_one_wraps_http_errors(self):
         client = _make_client()
         mock_async_client = AsyncMock()

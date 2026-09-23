@@ -59,8 +59,24 @@ from openjiuwen.core.foundation.llm.schema.message_chunk import (
 # Tools
 from openjiuwen.core.foundation.llm.schema.tool_call import ToolCall
 
+# Classification (Jev System One)
+from openjiuwen.core.foundation.llm.schema.classification import (
+    ChoiceAnswer,
+    ChoiceQuestion,
+    ClassificationAnswer,
+    ClassificationQuestion,
+    ClassificationResponse,
+    ClassificationUsage,
+    NoulAnswer,
+    NoulCriteria,
+    NoulQuestion,
+    ScoreAnswer,
+    ScoreQuestion,
+)
+
 # Built-in implementations
 from openjiuwen.core.foundation.llm.model_clients.anthropic_model_client import AnthropicModelClient
+from openjiuwen.core.foundation.llm.model_clients.jev_model_client import JevModelClient
 from openjiuwen.core.foundation.llm.model_clients.openai_model_client import OpenAIModelClient
 from openjiuwen.core.foundation.llm.output_parsers.json_output_parser import JsonOutputParser
 from openjiuwen.core.foundation.llm.output_parsers.markdown_output_parser import MarkdownOutputParser
@@ -140,9 +156,25 @@ _TOOL_CLASSES = [
     "ToolCall",
 ]
 
+# Classification (Jev System One) classes
+_CLASSIFICATION_CLASSES = [
+    "ChoiceAnswer",
+    "ChoiceQuestion",
+    "ClassificationAnswer",
+    "ClassificationQuestion",
+    "ClassificationResponse",
+    "ClassificationUsage",
+    "NoulAnswer",
+    "NoulCriteria",
+    "NoulQuestion",
+    "ScoreAnswer",
+    "ScoreQuestion",
+]
+
 # Built-in ModelClient implementations
 _PREBUILT_MODEL_CLIENTS = [
     "AnthropicModelClient",
+    "JevModelClient",
     "OpenAIModelClient",
 ]
 
@@ -162,6 +194,7 @@ __all__ = (
     + _MESSAGE_METADATA_CONSTANTS
     + _MESSAGE_CHUNK_CLASSES
     + _TOOL_CLASSES
+    + _CLASSIFICATION_CLASSES
     + _PREBUILT_MODEL_CLIENTS
     + _PREBUILT_OUTPUT_PARSERS
 )

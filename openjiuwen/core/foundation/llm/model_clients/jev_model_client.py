@@ -170,10 +170,9 @@ class JevModelClient:
             ) as client:
                 response = await client.post(url, json=payload, headers=headers)
                 response.raise_for_status()
-        except httpx.HTTPError as exc:
+                return ClassificationResponse.model_validate(response.json())
+        except (httpx.HTTPError, ValueError) as exc:
             raise build_error(
                 StatusCode.MODEL_CALL_FAILED,
                 error_msg=f"Jev system_one request failed: {exc}",
             ) from exc
-
-        return ClassificationResponse.model_validate(response.json())
