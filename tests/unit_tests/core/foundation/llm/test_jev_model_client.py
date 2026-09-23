@@ -238,6 +238,48 @@ class TestJevModelClientSystemOne:
         }
 
     @pytest.mark.asyncio
+    async def test_structured_instructions_and_criteria_round_trip(self):
+        """``instructions``/``criteria``/``legend`` accept the object/array form.
+
+        TypeSafe documents these as "a string, object, or array" on every
+        primitive (https://docs.typesafe.ai/api.md), not plain strings.
+        Regression test for the schema previously narrowing them to ``str``,
+        which rejected this exact documented shape at construction time.
+        """
+        client = _make_client()
+        response_json = {
+            "answers": {
+                "severity": {
+                    "type": "score",
+                    "score": 0.5,
+                    "confidence": 0.8,
+                    "probabilities": {"0": 0.5, "1": 0.5},
+                    "legend": {"0": {"what": "cosmetic"}, "1": "blocking"},
+                },
+            },
+        }
+        mock_async_client = _mock_async_client(response_json)
+
+        with patch("httpx.AsyncClient", return_value=mock_async_client):
+            result = await client.system_one(
+                state="The export button crashes.",
+                questions={
+                    "severity": ScoreQuestion(
+                        instructions={"text": "How severe is this?", "locale": "en"},
+                        criteria=[{"what": "cosmetic", "examples": ["typo"]}, "blocking"],
+                    ),
+                },
+            )
+
+        sent_criteria = mock_async_client.post.call_args.kwargs["json"]["questions"]["severity"]["criteria"]
+        assert sent_criteria == [{"what": "cosmetic", "examples": ["typo"]}, "blocking"]
+
+        answer = result.answers["severity"]
+        assert isinstance(answer, ScoreAnswer)
+        assert answer.legend[0] == {"what": "cosmetic"}
+        assert answer.legend[1] == "blocking"
+
+    @pytest.mark.asyncio
     async def test_system_one_rejects_empty_questions(self):
         client = _make_client()
         with pytest.raises(BaseError):

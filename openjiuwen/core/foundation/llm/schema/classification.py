@@ -13,39 +13,47 @@ need on every question (``NoulQuestion.criteria``) or every answer
 (``probabilities``, ``legend``).
 """
 
-from typing import Annotated, Literal, Optional, Union
+from typing import Annotated, Any, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from openjiuwen.core.foundation.llm.schema.generation_response import GenerationResponse
 
+# TypeSafe documents ``instructions`` and criteria/legend text as
+# "a string, object, or array" on every primitive (see
+# https://docs.typesafe.ai/api.md and .../primitives/{noul,choice,score}),
+# not plain strings. Keep that union everywhere the wire protocol allows it
+# instead of narrowing to ``str``, so structured instructions/criteria
+# round-trip instead of failing pydantic validation.
+RichText = Union[str, dict[str, Any], list[Any]]
+
 
 class NoulCriteria(BaseModel):
     """What counts as a yes and what counts as a no, for a ``NoulQuestion``."""
 
-    true: str = Field(description="What counts as a yes")
-    false: str = Field(description="What counts as a no")
+    true: RichText = Field(description="What counts as a yes")
+    false: RichText = Field(description="What counts as a no")
 
 
 class NoulQuestion(BaseModel):
     """Asks "is this true?". The answer is a calibrated probability of yes."""
 
-    instructions: str = Field(description="The yes/no question, or a statement to judge")
+    instructions: RichText = Field(description="The yes/no question, or a statement to judge")
     criteria: Optional[NoulCriteria] = Field(default=None, description="Optional yes/no guidance")
 
 
 class ChoiceQuestion(BaseModel):
     """Asks "which of these options?". The answer is a choice plus a confidence."""
 
-    instructions: str = Field(description="What the question is asking, in natural language")
-    criteria: dict[str, str] = Field(description="Option name -> description of when it applies")
+    instructions: RichText = Field(description="What the question is asking, in natural language")
+    criteria: dict[str, RichText] = Field(description="Option name -> description of when it applies")
 
 
 class ScoreQuestion(BaseModel):
     """Asks "which level?". The answer is a position on a ladder plus a confidence."""
 
-    instructions: str = Field(description="What the question is asking, in natural language")
-    criteria: list[str] = Field(description="Ordered levels, from the low end of the scale to the high end")
+    instructions: RichText = Field(description="What the question is asking, in natural language")
+    criteria: list[RichText] = Field(description="Ordered levels, from the low end of the scale to the high end")
 
 
 ClassificationQuestion = Union[NoulQuestion, ChoiceQuestion, ScoreQuestion]
@@ -74,7 +82,10 @@ class ScoreAnswer(BaseModel):
     score: float = Field(description="Probability-weighted mean of the level numbers; can fall between two levels")
     confidence: float = Field(description="How peaked probabilities is; low when it's spread across levels")
     probabilities: dict[int, float] = Field(description="Probability of each level, keyed by level number")
-    legend: dict[int, str] = Field(description="Every level number mapped back to its description")
+    legend: dict[int, Union[str, dict[str, Any]]] = Field(
+        description="Every level number mapped back to its description "
+        "(the original criterion string, or the full object for structured criteria)"
+    )
 
 
 ClassificationAnswer = Annotated[
